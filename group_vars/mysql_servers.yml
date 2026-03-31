@@ -1,0 +1,34 @@
+---
+# Common variables for all MySQL servers
+# Scope: mysql_servers group
+
+# Common MySQL configuration
+mysql_port: 3306
+mysql_bind_address: '0.0.0.0'
+mysql_config_file: '/etc/mysql/mysql.conf.d/mysqld.cnf'
+
+# Services
+mysql_service_name: mysql
+mysql_service_state: started
+mysql_service_enabled: yes
+
+# Packages
+mysql_packages:
+  - mysql-server
+  - mysql-client
+  - python3-pymysql
+
+# Logs
+mysql_log_error: '/var/log/mysql/error.log'
+mysql_log_dir: '/var/log/mysql'
+
+# Root user (security handled via vault)
+mysql_root_user: 'root'
+
+# Default user management
+mysql_remove_anonymous_users: yes
+mysql_remove_test_database: yes
+
+# Backup
+mysql_backup_dir: '/var/backups/mysql'
+mysql_backup_enabled: no

@@ -1,0 +1,15 @@
+---
+# Ansible Vault secrets file - Staging
+# IMPORTANT: NEVER commit this file to Git!
+#
+# Create this file with:
+#   ansible-vault create group_vars/vault_staging.yml
+#
+# Example content for Staging:
+
+# MySQL Secrets - Staging
+vault_mysql_root_password_staging: "StagingRootPassword123!"
+vault_prestashop_db_password_staging: "StagingDBPassword456!"
+
+# Prestashop Admin - Staging
+vault_prestashop_admin_password_staging: "StagingAdminPassword789!"

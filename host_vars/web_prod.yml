@@ -1,0 +1,43 @@
+---
+# Variables spécifiques au serveur Web Production (Prestashop)
+# Host: web_prod (192.168.56.12)
+
+# Identité de l'hôte
+hostname: prestashop-web-prod
+environment_type: production
+
+# Configuration Prestashop
+prestashop_version: '8.1.2'
+prestashop_install_dir: '/var/www/prestashop'
+prestashop_domain: '192.168.56.12'
+prestashop_protocol: 'http'
+prestashop_admin_folder: 'admin_prestashop'
+
+# Configuration administrateur Prestashop
+prestashop_admin_email: 'admin@prestashop.local'
+prestashop_admin_password: "{{ vault_prestashop_admin_password }}"
+
+# Configuration base de données
+prestashop_db_host: 'mysql_prod'
+prestashop_db_name: 'prestashop_db'
+prestashop_db_user: 'prestashop_user'
+prestashop_db_password: "{{ vault_prestashop_db_password }}"
+
+# Version PHP
+php_version: '7.4'
+
+# Configuration PHP optimisée
+php_memory_limit: '256M'
+php_max_execution_time: 60
+php_upload_max_filesize: '100M'
+php_post_max_size: '100M'
+
+# Configuration VirtualHost Apache
+apache_vhost_name: 'prestashop_prod'
+apache_vhost_port: 80
+apache_vhost_docroot: "{{ prestashop_install_dir }}"
+apache_vhost_servername: '192.168.56.12'
+
+# Logs spécifiques
+apache_prestashop_error_log: '/var/log/apache2/prestashop_error.log'
+apache_prestashop_access_log: '/var/log/apache2/prestashop_access.log'

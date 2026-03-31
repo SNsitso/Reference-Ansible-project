@@ -1,0 +1,60 @@
+---
+# Common variables for all Web servers (Prestashop)
+# Scope: web_servers group
+
+# Apache configuration
+apache_service_name: apache2
+apache_service_state: started
+apache_service_enabled: yes
+
+# Apache and PHP packages
+apache_packages:
+  - apache2
+  - libapache2-mod-php{{ php_version }}
+
+apache_modules:
+  - rewrite
+  - headers
+  - proxy
+  - proxy_http
+
+# PHP configuration
+php_packages:
+  - php{{ php_version }}
+  - php{{ php_version }}-cli
+  - php{{ php_version }}-common
+  - php{{ php_version }}-curl
+  - php{{ php_version }}-gd
+  - php{{ php_version }}-intl
+  - php{{ php_version }}-mbstring
+  - php{{ php_version }}-mysql
+  - php{{ php_version }}-xml
+  - php{{ php_version }}-zip
+  - php{{ php_version }}-bcmath
+  - php{{ php_version }}-soap
+
+# Common Prestashop configuration
+prestashop_install_base_dir: '/var/www'
+prestashop_user: 'www-data'
+prestashop_group: 'www-data'
+
+# Default permissions
+prestashop_dir_mode: '0755'
+prestashop_file_mode: '0644'
+
+# Deployment tools
+web_packages_common:
+  - unzip
+  - curl
+  - wget
+  - git
+  - mysql-client
+  - software-properties-common
+
+# Logs
+apache_log_dir: '/var/log/apache2'
+apache_access_log: '/var/log/apache2/access.log'
+apache_error_log: '/var/log/apache2/error.log'
+
+# Repository PHP PPA
+php_ppa: 'ppa:ondrej/php'

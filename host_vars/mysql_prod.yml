@@ -1,0 +1,32 @@
+---
+# Variables spécifiques au serveur MySQL Production
+# Host: mysql_prod (192.168.56.11)
+
+# Identité de l'hôte
+hostname: mysql-server-prod
+environment_type: production
+
+# Mot de passe root MySQL (à gérer avec Vault en production)
+mysql_root_password: "{{ vault_mysql_root_password }}"
+
+# Configuration de la base de données Prestashop
+mysql_database: 'prestashop_db'
+mysql_db_charset: 'utf8mb4'
+mysql_db_collation: 'utf8mb4_unicode_ci'
+
+# Utilisateur application MySQL
+mysql_app_user: 'prestashop_user'
+mysql_app_password: "{{ vault_prestashop_db_password }}"
+mysql_app_user_host: '%'  # Accessible depuis d'autres machines
+mysql_app_privileges: 'ALL'
+
+# Optimisations Production
+mysql_max_connections: 200
+mysql_innodb_buffer_pool_size: '1G'
+mysql_slow_query_log: yes
+mysql_slow_query_time: 2
+
+# Backup Production
+mysql_backup_enabled: yes
+mysql_backup_hour: 2
+mysql_backup_minute: 0

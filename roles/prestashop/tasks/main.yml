@@ -1,0 +1,165 @@
+---
+# PrestaShop role - Installation and configuration of PrestaShop
+
+- name: Install system dependencies
+  apt:
+    name:
+      - apache2
+      - unzip
+      - curl
+      - wget
+      - git
+      - mysql-client
+      - software-properties-common
+    state: present
+    update_cache: true
+  become: true
+
+- name: Add PHP repository
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+    update_cache: true
+  become: true
+
+- name: Install PHP and required extensions
+  apt:
+    name:
+      - php{{ php_version }}
+      - php{{ php_version }}-cli
+      - php{{ php_version }}-common
+      - php{{ php_version }}-curl
+      - php{{ php_version }}-gd
+      - php{{ php_version }}-intl
+      - php{{ php_version }}-mbstring
+      - php{{ php_version }}-mysql
+      - php{{ php_version }}-xml
+      - php{{ php_version }}-zip
+      - php{{ php_version }}-bcmath
+      - php{{ php_version }}-soap
+      - libapache2-mod-php{{ php_version }}
+    state: present
+  become: true
+
+- name: Enable required Apache modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rewrite
+    - headers
+    - ssl
+  become: true
+  notify: Restart Apache
+
+- name: Create PrestaShop installation directory
+  file:
+    path: "{{ prestashop_install_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  become: true
+
+- name: Download PrestaShop
+  get_url:
+    url: "https://github.com/PrestaShop/PrestaShop/releases/download/{{ prestashop_version }}/prestashop_{{ prestashop_version }}.zip"
+    dest: "/tmp/prestashop.zip"
+    mode: '0644'
+  become: true
+
+- name: Extract PrestaShop
+  unarchive:
+    src: "/tmp/prestashop.zip"
+    dest: "{{ prestashop_install_dir }}"
+    remote_src: true
+    owner: www-data
+    group: www-data
+  become: true
+
+- name: Check if prestashop.zip exists in installation directory
+  stat:
+    path: "{{ prestashop_install_dir }}/prestashop.zip"
+  register: prestashop_inner_zip
+  become: true
+
+- name: Extract internal prestashop.zip file if present
+  unarchive:
+    src: "{{ prestashop_install_dir }}/prestashop.zip"
+    dest: "{{ prestashop_install_dir }}"
+    remote_src: true
+    owner: www-data
+    group: www-data
+  when: prestashop_inner_zip.stat.exists
+  become: true
+
+- name: Set correct file permissions
+  file:
+    path: "{{ prestashop_install_dir }}"
+    owner: www-data
+    group: www-data
+    recurse: true
+    mode: '0755'
+  become: true
+
+- name: Configure Apache VirtualHost for PrestaShop
+  template:
+    src: prestashop.conf.j2
+    dest: /etc/apache2/sites-available/prestashop.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Restart Apache
+
+- name: Enable PrestaShop site
+  command: a2ensite prestashop.conf
+  become: true
+  notify: Restart Apache
+  args:
+    creates: /etc/apache2/sites-enabled/prestashop.conf
+
+- name: Disable default site
+  command: a2dissite 000-default.conf
+  become: true
+  notify: Restart Apache
+  ignore_errors: true
+
+- name: Configure PHP for PrestaShop
+  template:
+    src: php.ini.j2
+    dest: "/etc/php/{{ php_version }}/apache2/conf.d/99-prestashop.ini"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: Restart Apache
+
+- name: Ensure Apache is started and enabled
+  systemd:
+    name: apache2
+    state: started
+    enabled: true
+  become: true
+
+- name: Test MySQL database connection
+  command: mysql -h {{ prestashop_db_host }} -u {{ prestashop_db_user }} -p{{ prestashop_db_password }} -e "SHOW DATABASES;"
+  register: mysql_connection_test
+  ignore_errors: true
+  become: true
+
+- name: Display MySQL connection test result
+  debug:
+    msg: 
+      - "MySQL connection test: {{ 'SUCCESS' if mysql_connection_test.rc == 0 else 'FAILED' }}"
+      - "{{ mysql_connection_test.stdout_lines if mysql_connection_test.rc == 0 else mysql_connection_test.stderr }}"
+
+- name: Display deployment information
+  debug:
+    msg:
+      - "PrestaShop installed in: {{ prestashop_install_dir }}"
+      - "URL: http://{{ prestashop_domain }}"
+      - "Database: {{ prestashop_db_name }}"
+      - "DB Server: {{ prestashop_db_host }}"
+      - "DB User: {{ prestashop_db_user }}"
+      - "Continue installation via web interface"

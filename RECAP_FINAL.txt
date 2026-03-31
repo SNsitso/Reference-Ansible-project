@@ -1,0 +1,259 @@
+╔════════════════════════════════════════════════════════════════╗
+║           PROJET CONFIGURÉ ET PRÊT AU DÉPLOIEMENT             ║
+╚════════════════════════════════════════════════════════════════╝
+
+📅 Date: 11 décembre 2025
+👤 Ingénieur DevOps
+Objectif: Déploiement automatisé Prestashop + MySQL
+
+════════════════════════════════════════════════════════════════
+
+MODIFICATIONS EFFECTUÉES - OPTION 3
+
+════════════════════════════════════════════════════════════════
+
+1️⃣ VAGRANTFILE CRÉÉ
+   ✓ VM1 (db) : 192.168.56.11 - MySQL + Ansible - 2GB RAM
+   ✓ VM2 (web) : 192.168.56.12 - Prestashop - 2GB RAM
+   ✓ Réseau privé configuré
+   ✓ Port forwarding : localhost:8080 → VM2:80
+   ✓ Ansible pré-installé sur VM1
+   ✓ Projet synchronisé automatiquement
+
+2️⃣ INVENTAIRE ANSIBLE ADAPTÉ
+   ✓ VM1 (db) : localhost pour MySQL
+   ✓ VM2 (web) : 192.168.56.12 via SSH
+   ✓ Variables globales configurées
+
+3️⃣ RÔLE MYSQL MODIFIÉ
+   ✓ Accepte connexions réseau (bind-address: 0.0.0.0)
+   ✓ Utilisateur avec accès distant (host: %)
+   ✓ Configuration sécurisée maintenue
+
+4️⃣ RÔLE PRESTASHOP MODIFIÉ
+   ✓ DB Host: 192.168.56.11 (IP de VM1)
+   ✓ Client MySQL installé
+   ✓ Test de connexion DB automatique
+   ✓ Domain: 192.168.56.12
+
+5️⃣ PLAYBOOK OPTIMISÉ
+   ✓ Déploiement séquentiel: MySQL → Prestashop
+   ✓ Vérifications de services
+   ✓ Messages de statut clairs
+
+6️⃣ GUIDE COMPLET (DEPLOIEMENT.md)
+   ✓ 10 étapes détaillées
+   ✓ Toutes les commandes
+   ✓ Tests de validation
+   ✓ Dépannage
+   ✓ Checklist finale
+
+════════════════════════════════════════════════════════════════
+
+📁 STRUCTURE FINALE DU PROJET
+
+════════════════════════════════════════════════════════════════
+
+exam_ansible/
+├── Vagrantfile              ⭐ NOUVEAU - Config 2 VMs
+├── ansible.cfg              ✓ Config Ansible
+├── inventory.ini            ✓ Adapté pour 2 VMs
+├── deploy.yml               ✓ Playbook orchestration
+├── README.md                ✓ Doc technique
+├── DEPLOIEMENT.md           ⭐ NOUVEAU - Guide pas à pas
+└── roles/
+    ├── mysql/               ✓ Adapté pour réseau
+    │   ├── defaults/main.yml
+    │   ├── handlers/main.yml
+    │   ├── tasks/main.yml
+    │   └── templates/my.cnf.j2
+    └── prestashop/          ✓ Adapté pour DB distante
+        ├── defaults/main.yml
+        ├── handlers/main.yml
+        ├── tasks/main.yml
+        └── templates/
+            ├── prestashop.conf.j2
+            └── php.ini.j2
+
+════════════════════════════════════════════════════════════════
+
+PROCHAINES ÉTAPES - POUR VOUS
+
+════════════════════════════════════════════════════════════════
+
+ÉTAPE 1: Créer les VMs
+----------------------
+cd "C:\Users\Serge Nyuiadzi\Downloads\exam_ansible"
+vagrant up
+
+⏱️ Durée: 5-10 minutes
+Note: Les VMs seront créées et configurées automatiquement
+
+ÉTAPE 2: Se connecter à VM1
+----------------------------
+vagrant ssh db
+
+Note: Vous serez dans VM1 qui contrôle tout
+
+ÉTAPE 3: Configurer SSH vers VM2
+---------------------------------
+ssh-copy-id vagrant@192.168.56.12
+(mot de passe: vagrant)
+
+Note: Permet à Ansible de gérer VM2
+
+ÉTAPE 4: Lancer le déploiement
+-------------------------------
+cd ~/ansible
+ansible-playbook deploy.yml -vvv 2>&1 | tee deployment.log
+
+⏱️ Durée: 10-15 minutes
+Note: Tout sera installé automatiquement
+
+ÉTAPE 5: Accéder au site
+-------------------------
+Ouvrir dans Windows: http://localhost:8080
+
+Note: Vous verrez Prestashop prêt à installer
+
+ÉTAPE 6: Configurer Prestashop
+-------------------------------
+Suivez l'assistant avec:
+- Serveur DB: 192.168.56.11
+- Database: prestashop_db
+- User: prestashop_user
+- Password: Prestashop@123
+
+ÉTAPE 7: Récupérer les logs
+----------------------------
+exit (sortir de VM1)
+vagrant scp db:ansible/deployment.log ./deployment.log
+
+Note: Logs prêts pour le livrable
+
+════════════════════════════════════════════════════════════════
+
+ARCHITECTURE DÉPLOYÉE
+
+════════════════════════════════════════════════════════════════
+
+Windows (Votre PC)
+      │
+      │ vagrant up
+      ▼
+┌──────────────────┐         ┌──────────────────┐
+│  VM1: db         │         │  VM2: web        │
+│  192.168.56.11   │◄───────►│  192.168.56.12   │
+│                  │ réseau  │                  │
+│  MySQL 3306      │         │  Apache 80       │
+│  + Ansible       │  SSH    │  Prestashop      │
+└──────────────────┘         └──────────────────┘
+      │                             │
+      │ ansible-playbook            │
+      └─────────────────────────────┘
+      
+Windows (Navigateur) ──► http://localhost:8080 ──► VM2
+
+════════════════════════════════════════════════════════════════
+
+📊 RESSOURCES UTILISÉES
+
+════════════════════════════════════════════════════════════════
+
+VM1 (db):
+- RAM: 2048 MB
+- CPU: 2 cores
+- Disk: ~3 GB
+- Services: MySQL + Ansible
+
+VM2 (web):
+- RAM: 2048 MB
+- CPU: 2 cores
+- Disk: ~4 GB
+- Services: Apache + PHP + Prestashop
+
+TOTAL:
+- RAM: 4 GB
+- CPU: 4 cores
+- Disk: ~7 GB
+
+Note: Configuration intelligente pour 8+ GB RAM disponible
+
+════════════════════════════════════════════════════════════════
+
+POINTS FORTS DE CETTE CONFIGURATION
+
+════════════════════════════════════════════════════════════════
+
+✓ Respect strict de l'énoncé (2 machines distinctes)
+✓ Architecture professionnelle et réaliste
+✓ Communication inter-serveurs configurée
+✓ Ansible dans environnement Linux natif
+✓ Déploiement entièrement automatisé
+✓ Tests de connexion intégrés
+✓ Logs de déploiement réels
+✓ Guide complet étape par étape
+✓ Ressources optimisées (4GB RAM total)
+✓ Site web accessible depuis Windows
+✓ Infrastructure facilement reproductible
+
+════════════════════════════════════════════════════════════════
+
+📖 DOCUMENTATION DISPONIBLE
+
+════════════════════════════════════════════════════════════════
+
+1. README.md
+   → Documentation technique du projet
+   → Architecture et structure
+   → Variables configurables
+
+2. DEPLOIEMENT.md (CE FICHIER EST CRUCIAL!)
+   → Guide pas à pas complet
+   → Toutes les commandes
+   → Tests de validation
+   → Dépannage
+
+3. Commentaires dans les fichiers
+   → Vagrantfile : explications détaillées
+   → Playbooks : documentation des tâches
+   → Rôles : commentaires sur chaque action
+
+════════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT - AVANT DE COMMENCER
+
+════════════════════════════════════════════════════════════════
+
+1. Fermez tous les programmes gourmands en RAM
+2. Vérifiez que VirtualBox est bien installé
+3. Assurez-vous d'avoir une connexion internet
+4. Lisez DEPLOIEMENT.md avant de lancer
+5. Prenez le temps, chaque étape est importante
+
+════════════════════════════════════════════════════════════════
+
+🎓 FÉLICITATIONS !
+
+════════════════════════════════════════════════════════════════
+
+Vous disposez maintenant d'un projet professionnel :
+
+- Vagrantfile intelligent
+- 2 rôles Ansible optimisés
+- Communication réseau configurée
+- Tests automatiques intégrés
+- Documentation complète
+- Guide de déploiement détaillé
+
+Le projet est PRÊT. Il ne reste plus qu'à l'exécuter !
+
+════════════════════════════════════════════════════════════════
+
+LANCEZ-VOUS !
+
+Commencez par: vagrant up
+
+Bonne chance ! 🍀
+
+════════════════════════════════════════════════════════════════

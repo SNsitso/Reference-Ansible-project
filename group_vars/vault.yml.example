@@ -1,0 +1,23 @@
+---
+# Ansible Vault secrets file
+# IMPORTANT: NEVER commit this file to Git!
+#
+# Create this file with:
+#   ansible-vault create group_vars/mysql_servers/vault.yml
+#
+# To edit it:
+#   ansible-vault edit group_vars/mysql_servers/vault.yml
+#
+# To run a playbook with vault:
+#   ansible-playbook playbooks/deploy.yml --ask-vault-pass
+#   or
+#   ansible-playbook playbooks/deploy.yml --vault-password-file=.vault_pass
+#
+# Example content to add to this file:
+
+# MySQL Secrets - Production
+vault_mysql_root_password: "ChangeMeToAStrongPassword123!"
+vault_prestashop_db_password: "ChangeMeToAnother SecurePassword456!"
+
+# Prestashop Admin - Production
+vault_prestashop_admin_password: "ChangeAdminPasswordHere789!"

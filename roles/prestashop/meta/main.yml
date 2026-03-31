@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: DevOps Engineer
+  description: "Prestashop installation and configuration with Apache and PHP"
+  company: Your Company
+  license: MIT
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - bionic
+        
+  galaxy_tags:
+    - prestashop
+    - apache
+    - php
+    - web
+    - ecommerce
+
+dependencies: []

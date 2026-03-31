@@ -1,0 +1,400 @@
+╔════════════════════════════════════════════════════════════════╗
+║     SOLUTION DE DÉBOGAGE SSH - INJECTION DE CLÉ PUBLIQUE      ║
+╚════════════════════════════════════════════════════════════════╝
+
+Date: 11 décembre 2025
+Contexte: Résolution du problème de connexion SSH entre VM1 et VM2
+
+════════════════════════════════════════════════════════════════
+
+🔴 PROBLÈME RENCONTRÉ
+
+════════════════════════════════════════════════════════════════
+
+Symptôme:
+  ansible all -m ping
+  
+  Résultat:
+  [OK] db  | SUCCESS => {"ping": "pong"}
+  [ECHEC] web | UNREACHABLE => Permission denied (publickey)
+
+Diagnostic:
+  • VM1 (db) fonctionne → connexion locale OK
+  • VM2 (web) refuse la connexion → problème SSH
+  • Message: "Permission denied (publickey)"
+  • Ansible ne peut pas se connecter à VM2
+
+════════════════════════════════════════════════════════════════
+
+🔍 ANALYSE DE LA CAUSE
+
+════════════════════════════════════════════════════════════════
+
+1. TENTATIVE INITIALE: Mot de passe SSH
+   ─────────────────────────────────────
+   • Ajout de ansible_ssh_pass=vagrant dans inventory.ini
+   • Installation de sshpass sur VM1
+   • Résultat: ÉCHEC - SSH refuse toujours
+   
+   Pourquoi ?
+   → SSH de VM2 était configuré pour refuser les mots de passe
+   → Seules les clés publiques étaient acceptées
+
+2. ACTIVATION DU MOT DE PASSE
+   ───────────────────────────
+   • Modification de /etc/ssh/sshd_config sur VM2
+   • Changement: #PasswordAuthentication yes → PasswordAuthentication yes
+   • Redémarrage du service SSH
+   • Résultat: ÉCHEC persistant
+   
+   Pourquoi ?
+   → Ansible privilégie TOUJOURS les clés publiques
+   → Même avec le mot de passe activé, SSH essaie d'abord la clé
+   → Pas de clé publique autorisée = échec avant même de tenter le mot de passe
+
+3. RACINE DU PROBLÈME
+   ───────────────────
+   ✗ VM1 possède une paire de clés SSH (id_rsa + id_rsa.pub)
+   ✗ VM2 n'a PAS la clé publique de VM1 dans authorized_keys
+   ✗ SSH refuse la connexion par clé (pas autorisée)
+   ✗ SSH n'essaie pas le mot de passe (clé publique privilégiée)
+
+════════════════════════════════════════════════════════════════
+
+✅ SOLUTION APPLIQUÉE: INJECTION DE CLÉ PUBLIQUE
+
+════════════════════════════════════════════════════════════════
+
+MÉTHODE: Copie de la clé publique via Vagrant depuis Windows
+
+AVANTAGES de cette méthode:
+  ✓ Contourne le problème SSH circulaire
+  ✓ Utilise l'accès Vagrant (toujours disponible)
+  ✓ Pas besoin de mot de passe SSH
+  ✓ Solution propre et professionnelle
+  ✓ Méthode standard en production
+
+════════════════════════════════════════════════════════════════
+
+📋 ÉTAPES DE LA SOLUTION (DÉTAILLÉES)
+
+════════════════════════════════════════════════════════════════
+
+ÉTAPE 1: EXTRACTION DE LA CLÉ PUBLIQUE DE VM1
+──────────────────────────────────────────────
+
+Commande (depuis Windows PowerShell):
+  vagrant ssh db -c "cat ~/.ssh/id_rsa.pub" > temp_key.pub
+
+Décomposition:
+  ┌─────────────────────────────────────────────────────────┐
+  │ vagrant ssh db          → Se connecter à VM1            │
+  │ -c "..."                → Exécuter une commande         │
+  │ cat ~/.ssh/id_rsa.pub   → Lire la clé publique          │
+  │ > temp_key.pub          → Sauvegarder dans fichier      │
+  └─────────────────────────────────────────────────────────┘
+
+Résultat:
+  • Fichier temp_key.pub créé dans le dossier Windows
+  • Contient la clé publique SSH de VM1
+  • Format: ssh-rsa AAAAB3NzaC1yc2E... vagrant@mysql-server
+
+Pourquoi ça fonctionne ?
+  → Vagrant a un accès direct aux VMs
+  → Pas besoin de SSH entre les VMs
+  → Récupération "sûre" de la clé
+
+
+ÉTAPE 2: INJECTION DE LA CLÉ DANS VM2
+──────────────────────────────────────
+
+Commande (depuis Windows PowerShell):
+  Get-Content temp_key.pub | vagrant ssh web -c "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && chmod 700 ~/.ssh"
+
+Décomposition détaillée:
+  
+  Get-Content temp_key.pub
+  │
+  │ → Lit le contenu du fichier temp_key.pub
+  │
+  ▼
+  | (pipe)
+  │
+  │ → Envoie le contenu vers la commande suivante
+  │
+  ▼
+  vagrant ssh web -c "..."
+  │
+  │ → Se connecte à VM2 et exécute les commandes
+  │
+  ▼
+  Commandes exécutées dans VM2:
+  
+  1. mkdir -p ~/.ssh
+     └─ Crée le dossier .ssh s'il n'existe pas
+        Option -p: pas d'erreur si existe déjà
+  
+  2. cat >> ~/.ssh/authorized_keys
+     └─ Ajoute (>>) la clé reçue dans authorized_keys
+        (Ne remplace pas, ajoute à la fin)
+  
+  3. chmod 600 ~/.ssh/authorized_keys
+     └─ Permissions: rw------- (lecture/écriture propriétaire uniquement)
+        Requis pour SSH (sécurité)
+  
+  4. chmod 700 ~/.ssh
+     └─ Permissions: rwx------ (propriétaire uniquement)
+        Requis pour SSH (sécurité)
+
+Résultat:
+  • VM2 possède maintenant la clé publique de VM1
+  • Fichier: /home/vagrant/.ssh/authorized_keys
+  • Permissions correctes (600 et 700)
+  • SSH va accepter les connexions de VM1
+
+
+ÉTAPE 3: NETTOYAGE
+───────────────────
+
+Commande (depuis Windows PowerShell):
+  Remove-Item temp_key.pub
+
+Pourquoi ?
+  • Fichier temporaire plus nécessaire
+  • Bonne pratique de nettoyage
+  • Évite la confusion
+
+
+ÉTAPE 4: VÉRIFICATION
+──────────────────────
+
+Commande (depuis VM1):
+  ansible all -m ping
+
+Résultat attendu et obtenu:
+  [OK] db  | SUCCESS => {"ping": "pong"}
+  [OK] web | SUCCESS => {"ping": "pong"}
+
+Pourquoi ça fonctionne maintenant ?
+  1. Ansible essaie de se connecter à web avec la clé SSH
+  2. SSH de VM1 présente la clé privée (id_rsa)
+  3. SSH de VM2 vérifie la clé publique (authorized_keys)
+  4. Correspondance trouvée ✓
+  5. Connexion établie sans mot de passe ✓
+
+════════════════════════════════════════════════════════════════
+
+🔐 EXPLICATION TECHNIQUE: AUTHENTIFICATION PAR CLÉ SSH
+
+════════════════════════════════════════════════════════════════
+
+PRINCIPE DE BASE:
+  
+  Paire de clés asymétriques:
+  ┌──────────────────┐         ┌──────────────────┐
+  │  CLÉ PRIVÉE      │         │  CLÉ PUBLIQUE    │
+  │  (id_rsa)        │◄───────►│  (id_rsa.pub)    │
+  │  [ATTENTION] SECRÈTE       │         │  ✓ PUBLIQUE      │
+  │  Reste sur VM1   │         │  Copiée sur VM2  │
+  └──────────────────┘         └──────────────────┘
+
+PROCESSUS D'AUTHENTIFICATION:
+
+  1. VM1 demande connexion à VM2
+     └─ "Je veux me connecter en tant que vagrant"
+  
+  2. VM2 demande preuve d'identité
+     └─ "Prouve que tu es vagrant"
+  
+  3. VM2 envoie un défi cryptographique
+     └─ Message chiffré avec clé publique
+  
+  4. VM1 déchiffre avec clé privée
+     └─ Seule la clé privée correspondante peut déchiffrer
+  
+  5. VM1 renvoie la réponse
+     └─ Preuve qu'elle possède la clé privée
+  
+  6. VM2 vérifie la réponse
+     └─ Compare avec ce qui était attendu
+  
+  7. ✓ Authentification réussie
+     └─ Connexion établie sans mot de passe
+
+FICHIERS IMPLIQUÉS:
+
+  Sur VM1 (client):
+  ~/.ssh/id_rsa         → Clé privée (SECRÈTE)
+  ~/.ssh/id_rsa.pub     → Clé publique (peut être partagée)
+  
+  Sur VM2 (serveur):
+  ~/.ssh/authorized_keys → Liste des clés publiques autorisées
+
+SÉCURITÉ:
+
+  ✓ Clé privée JAMAIS partagée
+  ✓ Clé publique peut être copiée partout
+  ✓ Impossible de dériver la clé privée depuis la publique
+  ✓ Plus sécurisé qu'un mot de passe
+
+════════════════════════════════════════════════════════════════
+
+🔄 ALTERNATIVES TENTÉES (ET POURQUOI ELLES ONT ÉCHOUÉ)
+
+════════════════════════════════════════════════════════════════
+
+1. ssh-copy-id vagrant@192.168.56.12
+   ───────────────────────────────────
+   Commande standard pour copier une clé SSH
+   
+   ÉCHEC: Permission denied
+   Raison: Nécessite déjà une connexion SSH (mot de passe)
+          Mais SSH refusait le mot de passe
+
+2. sshpass -p vagrant ssh-copy-id vagrant@192.168.56.12
+   ──────────────────────────────────────────────────────
+   Utilise sshpass pour fournir le mot de passe automatiquement
+   
+   ÉCHEC: Permission denied
+   Raison: SSH de VM2 privilégie les clés publiques
+          Même avec mot de passe activé, SSH essaie la clé d'abord
+          Pas de clé autorisée = échec avant tentative mot de passe
+
+3. Modification ansible.cfg avec PreferredAuthentications=password
+   ─────────────────────────────────────────────────────────────
+   Force SSH à utiliser le mot de passe
+   
+   NON TESTÉ (solution clé trouvée avant)
+   Aurait pu fonctionner mais moins propre que les clés
+
+4. ansible_ssh_pass dans inventory.ini
+   ────────────────────────────────────
+   Variable Ansible pour fournir le mot de passe
+   
+   ÉCHEC: Ignorée par SSH
+   Raison: SSH privilégie toujours les clés si elles existent
+
+════════════════════════════════════════════════════════════════
+
+💡 LEÇONS APPRISES
+
+════════════════════════════════════════════════════════════════
+
+1. ORDRE DE PRIORITÉ SSH
+   ─────────────────────
+   SSH essaie toujours dans cet ordre:
+   1️⃣ Clé publique (si authorized_keys existe)
+   2️⃣ Mot de passe (si PasswordAuthentication yes)
+   3️⃣ Autres méthodes (keyboard-interactive, etc.)
+
+2. VAGRANT = ACCÈS PRIVILÉGIÉ
+   ──────────────────────────
+   • Vagrant a un accès direct aux VMs
+   • Utile pour le débogage
+   • Permet de contourner les problèmes SSH
+
+3. CLÉS SSH = MÉTHODE PROFESSIONNELLE
+   ───────────────────────────────────
+   • Plus sécurisé que les mots de passe
+   • Standard en production
+   • Automatisation facilitée
+   • Pas de mot de passe à taper
+
+4. PERMISSIONS CRITIQUES
+   ──────────────────────
+   SSH est très strict sur les permissions:
+   • ~/.ssh → 700 (drwx------)
+   • ~/.ssh/authorized_keys → 600 (-rw-------)
+   • Si permissions incorrectes → SSH refuse
+
+════════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATIONS POST-SOLUTION
+
+════════════════════════════════════════════════════════════════
+
+1. Test de connexion SSH manuelle
+   ───────────────────────────────
+   Depuis VM1:
+   ssh vagrant@192.168.56.12
+   
+   Résultat attendu: Connexion sans demande de mot de passe
+
+2. Test Ansible ping
+   ─────────────────
+   Depuis VM1:
+   ansible all -m ping
+   
+   Résultat: SUCCESS pour db et web
+
+3. Vérification fichier authorized_keys sur VM2
+   ────────────────────────────────────────────
+   Depuis VM2:
+   cat ~/.ssh/authorized_keys
+   
+   Contient: La clé publique de VM1
+
+4. Vérification permissions
+   ────────────────────────
+   Depuis VM2:
+   ls -la ~/.ssh/
+   
+   drwx------ (700) pour .ssh/
+   -rw------- (600) pour authorized_keys
+
+════════════════════════════════════════════════════════════════
+
+📚 RÉFÉRENCES ET DOCUMENTATION
+
+════════════════════════════════════════════════════════════════
+
+Configuration SSH:
+  • /etc/ssh/sshd_config → Configuration serveur SSH
+  • ~/.ssh/config → Configuration client SSH
+
+Fichiers clés SSH:
+  • ~/.ssh/id_rsa → Clé privée
+  • ~/.ssh/id_rsa.pub → Clé publique
+  • ~/.ssh/authorized_keys → Clés autorisées (serveur)
+  • ~/.ssh/known_hosts → Empreintes serveurs connus
+
+Commandes utiles:
+  • ssh-keygen → Générer paire de clés
+  • ssh-copy-id → Copier clé vers serveur
+  • ssh-add → Ajouter clé à l'agent SSH
+  • ssh -v → Mode verbose (débogage)
+
+════════════════════════════════════════════════════════════════
+
+🎯 RÉSUMÉ EXÉCUTIF
+
+════════════════════════════════════════════════════════════════
+
+PROBLÈME:
+  VM1 ne pouvait pas se connecter à VM2 via SSH
+
+CAUSE:
+  Clé publique de VM1 absente de VM2
+
+SOLUTION:
+  Injection de la clé via Vagrant depuis Windows
+
+COMMANDES:
+  1. vagrant ssh db -c "cat ~/.ssh/id_rsa.pub" > temp_key.pub
+  2. Get-Content temp_key.pub | vagrant ssh web -c "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && chmod 700 ~/.ssh"
+  3. Remove-Item temp_key.pub
+
+RÉSULTAT:
+  - Connexion SSH établie
+  - Ansible opérationnel
+  - Prêt pour le déploiement
+
+DURÉE TOTALE:
+  ~20-30 minutes de débogage
+
+════════════════════════════════════════════════════════════════
+
+Cette solution est applicable à tout problème similaire d'authentification
+SSH entre machines virtuelles ou serveurs distants.
+
+════════════════════════════════════════════════════════════════

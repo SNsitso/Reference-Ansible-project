@@ -1,0 +1,14 @@
+---
+# PrestaShop Apache handlers
+
+- name: Restart Apache
+  systemd:
+    name: apache2
+    state: restarted
+  become: true
+
+- name: Reload Apache
+  systemd:
+    name: apache2
+    state: reloaded
+  become: true

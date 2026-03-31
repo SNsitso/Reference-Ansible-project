@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: DevOps Engineer
+  description: "Secure MySQL installation and configuration for Prestashop"
+  company: Your Company
+  license: MIT
+  min_ansible_version: "2.9"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - bionic
+        
+  galaxy_tags:
+    - mysql
+    - database
+    - prestashop
+    - backend
+
+dependencies: []
