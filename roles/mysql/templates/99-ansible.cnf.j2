@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+# Configuration MySQL gérée par Ansible (rôle mysql)
+
+[mysqld]
+bind-address = {{ mysql_bind_address }}
+port = {{ mysql_port }}
+max_connections = {{ mysql_max_connections }}
+innodb_buffer_pool_size = {{ mysql_innodb_buffer_pool_size }}
+{% if mysql_slow_query_log | bool %}
+slow_query_log = 1
+slow_query_log_file = {{ mysql_slow_query_log_file }}
+long_query_time = {{ mysql_slow_query_time }}
+{% endif %}

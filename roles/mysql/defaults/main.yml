@@ -1,0 +1,42 @@
+---
+# Valeurs par défaut NON sensibles du rôle mysql.
+# Les secrets (mysql_root_password, mysql_app_password) n'ont volontairement
+# AUCUN défaut : ils doivent être fournis via Ansible Vault.
+
+# Service et paquets
+mysql_service_name: mysql
+mysql_packages:
+  - mysql-server
+  - mysql-client
+  - python3-pymysql
+
+# Réseau
+mysql_port: 3306
+mysql_bind_address: '0.0.0.0'
+
+# Base de données applicative
+mysql_database: prestashop_db
+mysql_db_charset: utf8mb4
+mysql_db_collation: utf8mb4_unicode_ci
+
+# Utilisateur applicatif
+mysql_app_user: prestashop_user
+mysql_app_user_host: '%'
+mysql_app_privileges: ALL
+
+# Durcissement
+mysql_remove_anonymous_users: true
+mysql_remove_test_database: true
+
+# Tuning (surchargé par host_vars selon l'environnement)
+mysql_max_connections: 100
+mysql_innodb_buffer_pool_size: 512M
+mysql_slow_query_log: false
+mysql_slow_query_time: 2
+mysql_slow_query_log_file: /var/log/mysql/mysql-slow.log
+
+# Sauvegardes (production uniquement en général)
+mysql_backup_enabled: false
+mysql_backup_dir: /var/backups/mysql
+mysql_backup_hour: 2
+mysql_backup_minute: 0

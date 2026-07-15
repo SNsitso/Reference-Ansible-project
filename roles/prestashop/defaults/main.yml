@@ -1,0 +1,62 @@
+---
+# Valeurs par défaut NON sensibles du rôle prestashop.
+# Les secrets (prestashop_db_password, prestashop_admin_password) n'ont
+# volontairement AUCUN défaut : ils doivent être fournis via Ansible Vault.
+
+# Application
+prestashop_version: '8.1.2'
+prestashop_install_dir: /var/www/prestashop
+prestashop_domain: localhost
+prestashop_admin_email: admin@example.com
+
+# Base de données distante
+prestashop_db_host: localhost
+prestashop_db_port: 3306
+prestashop_db_name: prestashop_db
+prestashop_db_user: prestashop_user
+
+# Propriétaire des fichiers
+prestashop_user: www-data
+prestashop_group: www-data
+
+# PHP
+php_version: '7.4'
+php_ppa: ppa:ondrej/php
+php_memory_limit: 256M
+php_max_execution_time: 300
+php_upload_max_filesize: 20M
+php_post_max_size: 22M
+php_max_input_vars: 5000
+php_packages:
+  - "php{{ php_version }}"
+  - "php{{ php_version }}-cli"
+  - "php{{ php_version }}-common"
+  - "php{{ php_version }}-curl"
+  - "php{{ php_version }}-gd"
+  - "php{{ php_version }}-intl"
+  - "php{{ php_version }}-mbstring"
+  - "php{{ php_version }}-mysql"
+  - "php{{ php_version }}-xml"
+  - "php{{ php_version }}-zip"
+  - "php{{ php_version }}-bcmath"
+  - "php{{ php_version }}-soap"
+  - "libapache2-mod-php{{ php_version }}"
+
+# Apache
+apache_service_name: apache2
+apache_vhost_port: 80
+apache_modules:
+  - rewrite
+  - headers
+  - ssl
+apache_prestashop_error_log: /var/log/apache2/prestashop_error.log
+apache_prestashop_access_log: /var/log/apache2/prestashop_access.log
+
+# Dépendances système
+web_packages_common:
+  - apache2
+  - unzip
+  - curl
+  - wget
+  - mysql-client
+  - software-properties-common

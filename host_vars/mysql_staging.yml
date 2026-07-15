@@ -6,24 +6,20 @@
 hostname: mysql-server-staging
 environment_type: staging
 
-# Mot de passe root MySQL (à gérer avec Vault)
-mysql_root_password: "{{ vault_mysql_root_password_staging }}"
+# Secrets : mêmes noms de variables qu'en production, mais les VALEURS
+# viennent du vault staging (inventories/staging/group_vars/all/vault.yml)
+mysql_root_password: "{{ vault_mysql_root_password }}"
+mysql_app_password: "{{ vault_mysql_app_password }}"
 
-# Configuration de la base de données Prestashop
-mysql_database: 'prestashop_db_staging'
-mysql_db_charset: 'utf8mb4'
-mysql_db_collation: 'utf8mb4_unicode_ci'
-
-# Utilisateur application MySQL
-mysql_app_user: 'prestashop_user_staging'
-mysql_app_password: "{{ vault_prestashop_db_password_staging }}"
+# Base de données applicative
+mysql_database: prestashop_db_staging
+mysql_app_user: prestashop_user_staging
 mysql_app_user_host: '%'
-mysql_app_privileges: 'ALL'
 
 # Optimisations Staging (ressources réduites)
 mysql_max_connections: 50
-mysql_innodb_buffer_pool_size: '512M'
-mysql_slow_query_log: no
+mysql_innodb_buffer_pool_size: 512M
+mysql_slow_query_log: false
 
 # Backup Staging
-mysql_backup_enabled: no
+mysql_backup_enabled: false

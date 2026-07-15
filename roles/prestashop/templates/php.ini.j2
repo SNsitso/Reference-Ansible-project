@@ -1,6 +1,7 @@
-; Configuration PHP pour Prestashop
-memory_limit = 256M
-upload_max_filesize = 20M
-post_max_size = 22M
-max_execution_time = 300
-max_input_vars = 5000
+; {{ ansible_managed }}
+; Configuration PHP pour PrestaShop (rôle prestashop)
+memory_limit = {{ php_memory_limit }}
+upload_max_filesize = {{ php_upload_max_filesize }}
+post_max_size = {{ php_post_max_size }}
+max_execution_time = {{ php_max_execution_time }}
+max_input_vars = {{ php_max_input_vars }}

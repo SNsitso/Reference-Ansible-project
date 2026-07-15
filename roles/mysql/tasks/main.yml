@@ -1,97 +1,104 @@
 ---
-# MySQL role - Installation and configuration of MySQL for PrestaShop
+# Rôle mysql - Installation et configuration de MySQL pour une application web.
+# Toutes les opérations root passent par le socket Unix (login_unix_socket) :
+# cela fonctionne avant ET après la définition du mot de passe root.
 
 - name: Update APT cache
   apt:
     update_cache: true
     cache_valid_time: 3600
-  become: true
 
-- name: Install MySQL Server
+- name: Install MySQL packages
   apt:
-    name:
-      - mysql-server
-      - mysql-client
-      - python3-pymysql
+    name: "{{ mysql_packages }}"
     state: present
-  become: true
 
 - name: Ensure MySQL is started and enabled
   systemd:
-    name: mysql
+    name: "{{ mysql_service_name }}"
     state: started
     enabled: true
-  become: true
 
-- name: Configure MySQL root password
+- name: Set MySQL root password
   mysql_user:
     name: root
     password: "{{ mysql_root_password }}"
     login_unix_socket: /var/run/mysqld/mysqld.sock
     state: present
-  become: true
-  ignore_errors: true
+  no_log: true
 
-- name: Create .my.cnf file for root authentication
+- name: Deploy /root/.my.cnf for root CLI authentication
   template:
     src: my.cnf.j2
     dest: /root/.my.cnf
     owner: root
     group: root
     mode: '0600'
-  become: true
+  no_log: true
 
 - name: Remove anonymous users
   mysql_user:
     name: ''
     host_all: true
     state: absent
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  become: true
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_remove_anonymous_users | bool
 
 - name: Remove test database
   mysql_db:
     name: test
     state: absent
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  become: true
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  when: mysql_remove_test_database | bool
 
-- name: Create PrestaShop database
+- name: Create application database
   mysql_db:
     name: "{{ mysql_database }}"
     state: present
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    encoding: utf8mb4
-    collation: utf8mb4_general_ci
-  become: true
+    encoding: "{{ mysql_db_charset }}"
+    collation: "{{ mysql_db_collation }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
 
-- name: Create MySQL user for PrestaShop
+- name: Create application user
   mysql_user:
-    name: "{{ mysql_user }}"
-    password: "{{ mysql_password }}"
-    priv: "{{ mysql_database }}.*:ALL"
-    host: "%"
+    name: "{{ mysql_app_user }}"
+    password: "{{ mysql_app_password }}"
+    priv: "{{ mysql_database }}.*:{{ mysql_app_privileges }}"
+    host: "{{ mysql_app_user_host }}"
     state: present
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-  become: true
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+  no_log: true
 
-- name: Configure MySQL to listen on all interfaces
-  lineinfile:
-    path: /etc/mysql/mysql.conf.d/mysqld.cnf
-    regexp: '^bind-address'
-    line: 'bind-address = 0.0.0.0'
-    state: present
-  become: true
+- name: Deploy MySQL server configuration (network + tuning)
+  template:
+    src: 99-ansible.cnf.j2
+    dest: /etc/mysql/mysql.conf.d/99-ansible.cnf
+    owner: root
+    group: root
+    mode: '0644'
   notify: Restart MySQL
+
+- name: Ensure backup directory exists
+  file:
+    path: "{{ mysql_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  when: mysql_backup_enabled | bool
+
+- name: Schedule daily database backup
+  cron:
+    name: "mysqldump {{ mysql_database }}"
+    hour: "{{ mysql_backup_hour }}"
+    minute: "{{ mysql_backup_minute }}"
+    user: root
+    job: "mysqldump --single-transaction {{ mysql_database }} | gzip > {{ mysql_backup_dir }}/{{ mysql_database }}_$(date +\\%F).sql.gz"
+  when: mysql_backup_enabled | bool
 
 - name: Display connection information
   debug:
     msg:
       - "Database created: {{ mysql_database }}"
-      - "User: {{ mysql_user }}"
-      - "Host: {{ mysql_host }}"
-      - "Port: {{ mysql_port }}"
+      - "Application user: {{ mysql_app_user }}"
+      - "Listening on: {{ mysql_bind_address }}:{{ mysql_port }}"

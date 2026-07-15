@@ -1,0 +1,15 @@
+---
+# Modèle de vault PRODUCTION - à copier puis CHIFFRER, ne jamais committer en clair.
+#
+# 1. Copier :   cp vault.yml.example vault.yml
+# 2. Éditer les valeurs ci-dessous
+# 3. Chiffrer : ansible-vault encrypt inventories/production/group_vars/all/vault.yml
+#
+# Exécution :  ansible-playbook site.yml -i inventories/production --ask-vault-pass
+#
+# Les NOMS de variables sont identiques en staging : seule la VALEUR change,
+# ce qui permet aux host_vars de référencer le même nom quel que soit l'env.
+
+vault_mysql_root_password: "ChangeMeStrongRootPassword123!"
+vault_mysql_app_password: "ChangeMeStrongAppPassword456!"
+vault_prestashop_admin_password: "ChangeMeStrongAdminPassword789!"

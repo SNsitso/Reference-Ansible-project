@@ -1,0 +1,122 @@
+---
+# ============================================================================
+# site.yml - Point d'entrée unique du déploiement (playbook haut niveau)
+#
+# Le MÊME playbook déploie n'importe quel environnement : c'est l'inventaire
+# choisi (-i) qui décide du "site" cible (hôtes, variables, secrets).
+#
+# Usage :
+#   Production : ansible-playbook site.yml -i inventories/production --ask-vault-pass
+#   Staging    : ansible-playbook site.yml -i inventories/staging --ask-vault-pass
+#
+#   Simulation : ajouter --check
+#   Partiel    : --tags database | --tags web | --tags verification
+#   Un hôte    : --limit web_prod
+# ============================================================================
+
+- name: Deploy database tier
+  hosts: mysql_servers
+  become: true
+  gather_facts: true
+  tags:
+    - database
+    - mysql
+
+  pre_tasks:
+    - name: Display environment information
+      debug:
+        msg: "Environment: {{ environment_name | default('unknown') }} | Host: {{ inventory_hostname }} ({{ ansible_host }})"
+
+    - name: Validate required MySQL variables
+      assert:
+        that:
+          - mysql_root_password is defined
+          - mysql_app_password is defined
+          - mysql_database is defined
+          - mysql_app_user is defined
+        fail_msg: >-
+          Variables MySQL manquantes. Vérifiez le vault
+          (inventories/<env>/group_vars/all/vault.yml) et les host_vars.
+
+  roles:
+    - mysql
+
+  post_tasks:
+    - name: Verify MySQL service is active and enabled
+      systemd:
+        name: "{{ mysql_service_name }}"
+        state: started
+        enabled: true
+
+- name: Deploy web tier (PrestaShop)
+  hosts: web_servers
+  become: true
+  gather_facts: true
+  tags:
+    - web
+    - prestashop
+
+  pre_tasks:
+    - name: Display environment information
+      debug:
+        msg: "Environment: {{ environment_name | default('unknown') }} | Host: {{ inventory_hostname }} ({{ ansible_host }})"
+
+    - name: Validate required PrestaShop variables
+      assert:
+        that:
+          - prestashop_version is defined
+          - prestashop_install_dir is defined
+          - prestashop_db_host is defined
+          - prestashop_db_name is defined
+          - prestashop_db_password is defined
+          - php_version is defined
+        fail_msg: >-
+          Variables PrestaShop manquantes. Vérifiez le vault
+          (inventories/<env>/group_vars/all/vault.yml) et les host_vars.
+
+    - name: Wait for the MySQL tier to be reachable
+      wait_for:
+        host: "{{ hostvars[groups['mysql_servers'][0]].ansible_host }}"
+        port: "{{ hostvars[groups['mysql_servers'][0]].mysql_port | default(3306) }}"
+        timeout: 300
+
+  roles:
+    - prestashop
+
+  post_tasks:
+    - name: Verify Apache service is active and enabled
+      systemd:
+        name: "{{ apache_service_name }}"
+        state: started
+        enabled: true
+
+- name: Final deployment verification
+  hosts: all
+  become: true
+  gather_facts: false
+  tags:
+    - verification
+
+  tasks:
+    - name: Verify MySQL is running
+      systemd:
+        name: "{{ mysql_service_name }}"
+        state: started
+      when: "'mysql_servers' in group_names"
+
+    - name: Verify Apache is running
+      systemd:
+        name: "{{ apache_service_name }}"
+        state: started
+      when: "'web_servers' in group_names"
+
+    - name: Final success message
+      debug:
+        msg:
+          - "========================================="
+          - "DEPLOYMENT COMPLETED SUCCESSFULLY!"
+          - "========================================="
+          - "Environment: {{ environment_name | default('unknown') }}"
+          - "PrestaShop URL: http://{{ hostvars[groups['web_servers'][0]].ansible_host }}"
+          - "========================================="
+      run_once: true

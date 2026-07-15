@@ -1,34 +1,11 @@
 ---
-# Common variables for all MySQL servers
-# Scope: mysql_servers group
+# Variables communes à TOUS les serveurs MySQL (tous environnements).
+# Ne contient que ce qui diffère des defaults du rôle ou qui doit être
+# garanti au niveau du groupe. Le reste vit dans roles/mysql/defaults/.
 
-# Common MySQL configuration
 mysql_port: 3306
-mysql_bind_address: '0.0.0.0'
-mysql_config_file: '/etc/mysql/mysql.conf.d/mysqld.cnf'
+mysql_bind_address: '0.0.0.0'  # écoute réseau : requis car le serveur web est distant
 
-# Services
-mysql_service_name: mysql
-mysql_service_state: started
-mysql_service_enabled: yes
-
-# Packages
-mysql_packages:
-  - mysql-server
-  - mysql-client
-  - python3-pymysql
-
-# Logs
-mysql_log_error: '/var/log/mysql/error.log'
-mysql_log_dir: '/var/log/mysql'
-
-# Root user (security handled via vault)
-mysql_root_user: 'root'
-
-# Default user management
-mysql_remove_anonymous_users: yes
-mysql_remove_test_database: yes
-
-# Backup
-mysql_backup_dir: '/var/backups/mysql'
-mysql_backup_enabled: no
+# Durcissement systématique sur tout serveur MySQL du parc
+mysql_remove_anonymous_users: true
+mysql_remove_test_database: true

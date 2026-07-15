@@ -1,106 +1,75 @@
 ---
-# PrestaShop role - Installation and configuration of PrestaShop
+# Rôle prestashop - Installation Apache + PHP + PrestaShop connecté à un MySQL distant.
 
 - name: Install system dependencies
   apt:
-    name:
-      - apache2
-      - unzip
-      - curl
-      - wget
-      - git
-      - mysql-client
-      - software-properties-common
+    name: "{{ web_packages_common }}"
     state: present
     update_cache: true
-  become: true
 
-- name: Add PHP repository
+- name: Add PHP PPA repository
   apt_repository:
-    repo: ppa:ondrej/php
+    repo: "{{ php_ppa }}"
     state: present
     update_cache: true
-  become: true
 
 - name: Install PHP and required extensions
   apt:
-    name:
-      - php{{ php_version }}
-      - php{{ php_version }}-cli
-      - php{{ php_version }}-common
-      - php{{ php_version }}-curl
-      - php{{ php_version }}-gd
-      - php{{ php_version }}-intl
-      - php{{ php_version }}-mbstring
-      - php{{ php_version }}-mysql
-      - php{{ php_version }}-xml
-      - php{{ php_version }}-zip
-      - php{{ php_version }}-bcmath
-      - php{{ php_version }}-soap
-      - libapache2-mod-php{{ php_version }}
+    name: "{{ php_packages }}"
     state: present
-  become: true
 
 - name: Enable required Apache modules
   apache2_module:
     name: "{{ item }}"
     state: present
-  loop:
-    - rewrite
-    - headers
-    - ssl
-  become: true
+  loop: "{{ apache_modules }}"
   notify: Restart Apache
 
 - name: Create PrestaShop installation directory
   file:
     path: "{{ prestashop_install_dir }}"
     state: directory
-    owner: www-data
-    group: www-data
+    owner: "{{ prestashop_user }}"
+    group: "{{ prestashop_group }}"
     mode: '0755'
-  become: true
 
-- name: Download PrestaShop
+- name: Download PrestaShop {{ prestashop_version }}
   get_url:
     url: "https://github.com/PrestaShop/PrestaShop/releases/download/{{ prestashop_version }}/prestashop_{{ prestashop_version }}.zip"
-    dest: "/tmp/prestashop.zip"
+    dest: "/tmp/prestashop_{{ prestashop_version }}.zip"
     mode: '0644'
-  become: true
 
-- name: Extract PrestaShop
+- name: Extract PrestaShop outer archive
   unarchive:
-    src: "/tmp/prestashop.zip"
+    src: "/tmp/prestashop_{{ prestashop_version }}.zip"
     dest: "{{ prestashop_install_dir }}"
     remote_src: true
-    owner: www-data
-    group: www-data
-  become: true
+    owner: "{{ prestashop_user }}"
+    group: "{{ prestashop_group }}"
+    creates: "{{ prestashop_install_dir }}/prestashop.zip"
 
-- name: Check if prestashop.zip exists in installation directory
+- name: Check for inner prestashop.zip archive
   stat:
     path: "{{ prestashop_install_dir }}/prestashop.zip"
   register: prestashop_inner_zip
-  become: true
 
-- name: Extract internal prestashop.zip file if present
+- name: Extract inner prestashop.zip archive
   unarchive:
     src: "{{ prestashop_install_dir }}/prestashop.zip"
     dest: "{{ prestashop_install_dir }}"
     remote_src: true
-    owner: www-data
-    group: www-data
+    owner: "{{ prestashop_user }}"
+    group: "{{ prestashop_group }}"
+    creates: "{{ prestashop_install_dir }}/index.php"
   when: prestashop_inner_zip.stat.exists
-  become: true
 
-- name: Set correct file permissions
+- name: Set ownership and permissions on PrestaShop files
   file:
     path: "{{ prestashop_install_dir }}"
-    owner: www-data
-    group: www-data
+    owner: "{{ prestashop_user }}"
+    group: "{{ prestashop_group }}"
     recurse: true
-    mode: '0755'
-  become: true
+    mode: 'u=rwX,g=rX,o=rX'
 
 - name: Configure Apache VirtualHost for PrestaShop
   template:
@@ -109,21 +78,19 @@
     owner: root
     group: root
     mode: '0644'
-  become: true
   notify: Restart Apache
 
 - name: Enable PrestaShop site
   command: a2ensite prestashop.conf
-  become: true
-  notify: Restart Apache
   args:
     creates: /etc/apache2/sites-enabled/prestashop.conf
-
-- name: Disable default site
-  command: a2dissite 000-default.conf
-  become: true
   notify: Restart Apache
-  ignore_errors: true
+
+- name: Disable default Apache site
+  command: a2dissite 000-default.conf
+  args:
+    removes: /etc/apache2/sites-enabled/000-default.conf
+  notify: Restart Apache
 
 - name: Configure PHP for PrestaShop
   template:
@@ -132,34 +99,31 @@
     owner: root
     group: root
     mode: '0644'
-  become: true
   notify: Restart Apache
 
 - name: Ensure Apache is started and enabled
   systemd:
-    name: apache2
+    name: "{{ apache_service_name }}"
     state: started
     enabled: true
-  become: true
 
-- name: Test MySQL database connection
-  command: mysql -h {{ prestashop_db_host }} -u {{ prestashop_db_user }} -p{{ prestashop_db_password }} -e "SHOW DATABASES;"
+# Le mot de passe passe par la variable d'environnement MYSQL_PWD :
+# il n'apparaît ni dans la liste des processus ni dans les logs (no_log).
+- name: Test connection to the remote MySQL database
+  command: >
+    mysql -h {{ prestashop_db_host }} -P {{ prestashop_db_port }}
+    -u {{ prestashop_db_user }} {{ prestashop_db_name }} -e "SELECT 1;"
+  environment:
+    MYSQL_PWD: "{{ prestashop_db_password }}"
   register: mysql_connection_test
-  ignore_errors: true
-  become: true
-
-- name: Display MySQL connection test result
-  debug:
-    msg: 
-      - "MySQL connection test: {{ 'SUCCESS' if mysql_connection_test.rc == 0 else 'FAILED' }}"
-      - "{{ mysql_connection_test.stdout_lines if mysql_connection_test.rc == 0 else mysql_connection_test.stderr }}"
+  changed_when: false
+  no_log: true
 
 - name: Display deployment information
   debug:
     msg:
       - "PrestaShop installed in: {{ prestashop_install_dir }}"
       - "URL: http://{{ prestashop_domain }}"
-      - "Database: {{ prestashop_db_name }}"
-      - "DB Server: {{ prestashop_db_host }}"
+      - "Database: {{ prestashop_db_name }} on {{ prestashop_db_host }}:{{ prestashop_db_port }} (connection OK)"
       - "DB User: {{ prestashop_db_user }}"
-      - "Continue installation via web interface"
+      - "Continue installation via the web interface"

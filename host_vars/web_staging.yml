@@ -1,43 +1,33 @@
 ---
-# Variables spécifiques au serveur Web Staging (Prestashop)
+# Variables spécifiques au serveur Web Staging (PrestaShop)
 # Host: web_staging (192.168.56.22)
 
 # Identité de l'hôte
 hostname: prestashop-web-staging
 environment_type: staging
 
-# Configuration Prestashop
+# Configuration PrestaShop
 prestashop_version: '8.1.2'
-prestashop_install_dir: '/var/www/prestashop_staging'
-prestashop_domain: '192.168.56.22'
-prestashop_protocol: 'http'
-prestashop_admin_folder: 'admin_prestashop_staging'
+prestashop_install_dir: /var/www/prestashop_staging
+prestashop_domain: 192.168.56.22
 
-# Configuration administrateur Prestashop
-prestashop_admin_email: 'admin@prestashop-staging.local'
-prestashop_admin_password: "{{ vault_prestashop_admin_password_staging }}"
+# Administrateur PrestaShop (secret depuis le vault staging)
+prestashop_admin_email: admin@prestashop-staging.local
+prestashop_admin_password: "{{ vault_prestashop_admin_password }}"
 
-# Configuration base de données
-prestashop_db_host: 'mysql_staging'
-prestashop_db_name: 'prestashop_db_staging'
-prestashop_db_user: 'prestashop_user_staging'
-prestashop_db_password: "{{ vault_prestashop_db_password_staging }}"
+# Base de données distante (IP résolue depuis l'inventaire staging)
+prestashop_db_host: "{{ hostvars['mysql_staging'].ansible_host }}"
+prestashop_db_name: prestashop_db_staging
+prestashop_db_user: prestashop_user_staging
+prestashop_db_password: "{{ vault_mysql_app_password }}"
 
-# Version PHP
+# PHP (ressources réduites en staging)
 php_version: '7.4'
-
-# Configuration PHP Staging
-php_memory_limit: '128M'
+php_memory_limit: 128M
 php_max_execution_time: 60
-php_upload_max_filesize: '50M'
-php_post_max_size: '50M'
+php_upload_max_filesize: 50M
+php_post_max_size: 50M
 
-# Configuration VirtualHost Apache
-apache_vhost_name: 'prestashop_staging'
-apache_vhost_port: 80
-apache_vhost_docroot: "{{ prestashop_install_dir }}"
-apache_vhost_servername: '192.168.56.22'
-
-# Logs spécifiques
-apache_prestashop_error_log: '/var/log/apache2/prestashop_staging_error.log'
-apache_prestashop_access_log: '/var/log/apache2/prestashop_staging_access.log'
+# Logs Apache spécifiques
+apache_prestashop_error_log: /var/log/apache2/prestashop_staging_error.log
+apache_prestashop_access_log: /var/log/apache2/prestashop_staging_access.log

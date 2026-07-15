@@ -1,12 +1,6 @@
-# Ansible Vault and sensitive files
-group_vars/vault.yml
-group_vars/vault_*.yml
-!group_vars/vault.yml.example
-!group_vars/vault_*.yml.example
-
-# PrestaShop defaults with passwords
-roles/prestashop/defaults/main.yml
-roles/mysql/defaults/main.yml
+# Ansible Vault (secrets chiffrés ou en clair) - seuls les .example sont versionnés
+inventories/*/group_vars/all/vault.yml
+.vault_pass
 
 # SSH keys
 *.pem
@@ -21,6 +15,9 @@ roles/mysql/defaults/main.yml
 *.log
 deploy_logs.txt
 LOGS_DEPLOIEMENT_FINAL.txt
+
+# Ansible retry files
+*.retry
 
 # IDE
 .vscode/

@@ -1,43 +1,34 @@
 ---
-# Variables spécifiques au serveur Web Production (Prestashop)
+# Variables spécifiques au serveur Web Production (PrestaShop)
 # Host: web_prod (192.168.56.12)
 
 # Identité de l'hôte
 hostname: prestashop-web-prod
 environment_type: production
 
-# Configuration Prestashop
+# Configuration PrestaShop
 prestashop_version: '8.1.2'
-prestashop_install_dir: '/var/www/prestashop'
-prestashop_domain: '192.168.56.12'
-prestashop_protocol: 'http'
-prestashop_admin_folder: 'admin_prestashop'
+prestashop_install_dir: /var/www/prestashop
+prestashop_domain: 192.168.56.12
 
-# Configuration administrateur Prestashop
-prestashop_admin_email: 'admin@prestashop.local'
+# Administrateur PrestaShop (secret depuis le vault)
+prestashop_admin_email: admin@prestashop.local
 prestashop_admin_password: "{{ vault_prestashop_admin_password }}"
 
-# Configuration base de données
-prestashop_db_host: 'mysql_prod'
-prestashop_db_name: 'prestashop_db'
-prestashop_db_user: 'prestashop_user'
-prestashop_db_password: "{{ vault_prestashop_db_password }}"
+# Base de données distante : on résout l'IP du serveur MySQL depuis
+# l'inventaire (pas de nom en dur -> reste correct si l'IP change)
+prestashop_db_host: "{{ hostvars['mysql_prod'].ansible_host }}"
+prestashop_db_name: prestashop_db
+prestashop_db_user: prestashop_user
+prestashop_db_password: "{{ vault_mysql_app_password }}"
 
-# Version PHP
+# PHP
 php_version: '7.4'
-
-# Configuration PHP optimisée
-php_memory_limit: '256M'
+php_memory_limit: 256M
 php_max_execution_time: 60
-php_upload_max_filesize: '100M'
-php_post_max_size: '100M'
+php_upload_max_filesize: 100M
+php_post_max_size: 100M
 
-# Configuration VirtualHost Apache
-apache_vhost_name: 'prestashop_prod'
-apache_vhost_port: 80
-apache_vhost_docroot: "{{ prestashop_install_dir }}"
-apache_vhost_servername: '192.168.56.12'
-
-# Logs spécifiques
-apache_prestashop_error_log: '/var/log/apache2/prestashop_error.log'
-apache_prestashop_access_log: '/var/log/apache2/prestashop_access.log'
+# Logs Apache spécifiques
+apache_prestashop_error_log: /var/log/apache2/prestashop_error.log
+apache_prestashop_access_log: /var/log/apache2/prestashop_access.log

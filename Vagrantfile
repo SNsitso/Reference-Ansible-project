@@ -102,7 +102,8 @@ Vagrant.configure("2") do |config|
       echo "2. cd ansible"
       echo "3. ssh-copy-id vagrant@192.168.56.12"
       echo "   (mot de passe: vagrant)"
-      echo "4. ansible-playbook deploy.yml -vvv 2>&1 | tee deployment.log"
+      echo "4. Créer et chiffrer le vault (voir inventories/production/group_vars/all/vault.yml.example)"
+      echo "5. ansible-playbook site.yml --ask-vault-pass -vv 2>&1 | tee deployment.log"
       echo ""
       echo "========================================="
     SHELL
@@ -154,7 +155,7 @@ Vagrant.configure("2") do |config|
       echo "========================================="
       echo "VM Prestashop configurée avec succès!"
       echo "IP: 192.168.56.12"
-      echo "Accès web: http://localhost:8080"
+      echo "Accès web: http://localhost:8081 (ou http://192.168.56.12)"
       echo "========================================="
     SHELL
   end

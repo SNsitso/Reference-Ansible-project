@@ -1,4 +1,5 @@
-<VirtualHost *:80>
+# {{ ansible_managed }}
+<VirtualHost *:{{ apache_vhost_port }}>
     ServerName {{ prestashop_domain }}
     ServerAdmin {{ prestashop_admin_email }}
     DocumentRoot {{ prestashop_install_dir }}
@@ -9,6 +10,6 @@
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/prestashop_error.log
-    CustomLog ${APACHE_LOG_DIR}/prestashop_access.log combined
+    ErrorLog {{ apache_prestashop_error_log }}
+    CustomLog {{ apache_prestashop_access_log }} combined
 </VirtualHost>
