@@ -130,5 +130,5 @@ mysql -h 192.168.56.11 -u prestashop_user -p -e "SELECT 1;"   # depuis VM2
 | [culture.md](culture.md) | Questions/réponses d'apprentissage Ansible |
 | [roles/mysql/README.md](roles/mysql/README.md) | Documentation du rôle mysql |
 | [roles/prestashop/README.md](roles/prestashop/README.md) | Documentation du rôle prestashop |
-| [VARIABLES_HIERARCHY.md](VARIABLES_HIERARCHY.md) | Hiérarchie des variables (héritée, FR) |
+| [VARIABLES_HIERARCHY.md](VARIABLES_HIERARCHY.md) | Hiérarchie et résolution des variables (à jour) |
 | `deploy_logs.txt`, `LOGS_DEPLOIEMENT_FINAL.txt` | Logs réels du déploiement de la version examen (archives) |
