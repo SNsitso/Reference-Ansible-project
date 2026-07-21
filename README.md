@@ -1,11 +1,8 @@
-# Ansible Reference - Déploiement PrestaShop + MySQL
+# Ansible Reference - PrestaShop + MySQL Deployment
 
-Projet Ansible de référence : un **playbook unique haut niveau** (`site.yml`)
-déploie une plateforme e-commerce PrestaShop + MySQL sur l'environnement de
-votre choix (production, staging, ou tout nouvel inventaire que vous ajoutez).
-
-> Documentation détaillée du projet et du processus : [PRESENTATION.md](PRESENTATION.md)
-> Notes d'apprentissage / questions-réponses : [culture.md](culture.md)
+Reference Ansible project: a **single top-level playbook** (`site.yml`)
+deploys a PrestaShop + MySQL e-commerce platform on the environment of your
+choice (production, staging, or any new inventory you add).
 
 ## Architecture
 
@@ -15,120 +12,117 @@ votre choix (production, staging, ou tout nouvel inventaire que vous ajoutez).
 │   192.168.56.11            │◄─────│   192.168.56.12            │
 │   Ubuntu 20.04 / 2 GB      │ 3306 │   Ubuntu 20.04 / 2 GB      │
 │                            │      │                            │
-│   Rôle: mysql              │      │   Rôle: prestashop         │
-│   MySQL 8 durci            │      │   Apache + PHP 7.4         │
-│   + contrôleur Ansible     │      │   PrestaShop 8.1.2         │
+│   Role: mysql              │      │   Role: prestashop         │
+│   Hardened MySQL 8         │      │   Apache + PHP 7.4         │
+│   + Ansible controller     │      │   PrestaShop 8.1.2         │
 └────────────────────────────┘      └────────────────────────────┘
-        Réseau privé 192.168.56.0/24 (Vagrant/VirtualBox)
+        Private network 192.168.56.0/24 (Vagrant/VirtualBox)
 ```
 
-## Structure du projet
+## Project structure
 
 ```text
 project_ansible/
-├── site.yml                  # Point d'entrée UNIQUE (haut niveau, réutilisable)
-├── ansible.cfg               # Config Ansible (inventaire par défaut: production)
-├── Vagrantfile               # Lab local : 2 VMs VirtualBox
+├── site.yml                  # SINGLE entry point (top-level, reusable)
+├── ansible.cfg               # Ansible config (default inventory: production)
+├── Vagrantfile               # Local lab: 2 VirtualBox VMs
 │
-├── inventories/              # 1 dossier = 1 environnement ("site")
+├── inventories/              # 1 folder = 1 environment ("site")
 │   ├── production/
 │   │   ├── hosts.yml
-│   │   └── group_vars/all/vault.yml.example   # secrets (à chiffrer)
+│   │   └── group_vars/all/vault.yml.example   # secrets (to encrypt)
 │   └── staging/
 │       ├── hosts.yml
 │       └── group_vars/all/vault.yml.example
 │
-├── group_vars/               # Variables communes par GROUPE (tous envs)
+├── group_vars/               # Variables shared per GROUP (all envs)
 │   ├── mysql_servers.yml
 │   └── web_servers.yml
-├── host_vars/                # Variables par HÔTE (spécifiques env)
+├── host_vars/                # Variables per HOST (env-specific)
 │   ├── mysql_prod.yml / mysql_staging.yml
 │   └── web_prod.yml   / web_staging.yml
 │
 └── roles/
-    ├── mysql/                # MySQL durci, tuning, backups (README dédié)
-    └── prestashop/           # Apache + PHP + PrestaShop (README dédié)
+    ├── mysql/                # Hardened MySQL, tuning, backups (own README)
+    └── prestashop/           # Apache + PHP + PrestaShop (own README)
 ```
 
-## Démarrage rapide
+## Quick start
 
 ```bash
-# 1. Créer les VMs (depuis Windows)
+# 1. Create the VMs (from Windows)
 vagrant up
 
-# 2. Se connecter au contrôleur (VM1)
+# 2. Connect to the controller (VM1)
 vagrant ssh db
 cd ansible
 
-# 3. Copier la clé SSH vers le serveur web (mot de passe: vagrant)
+# 3. Copy the SSH key to the web server (password: vagrant)
 ssh-copy-id vagrant@192.168.56.12
 
-# 4. Créer le vault de l'environnement
+# 4. Create the environment vault
 cp inventories/production/group_vars/all/vault.yml.example \
    inventories/production/group_vars/all/vault.yml
-# éditer les mots de passe, puis :
+# edit the passwords, then:
 ansible-vault encrypt inventories/production/group_vars/all/vault.yml
 
-# 5. Déployer
+# 5. Deploy
 ansible-playbook site.yml --ask-vault-pass
 ```
 
-## Un playbook, plusieurs environnements
+## One playbook, multiple environments
 
-Le même `site.yml` s'applique à n'importe quel environnement — c'est
-l'inventaire qui décide de la cible et de ses variables :
+The same `site.yml` applies to any environment — the selected inventory
+determines the target and its variables:
 
 ```bash
 ansible-playbook site.yml -i inventories/production --ask-vault-pass
 ansible-playbook site.yml -i inventories/staging    --ask-vault-pass
 
-# Simulation (aucun changement appliqué)
+# Dry run (no changes applied)
 ansible-playbook site.yml -i inventories/production --check --ask-vault-pass
 
-# Déploiement partiel par tag ou par hôte
+# Partial deployment by tag or host
 ansible-playbook site.yml --tags database --ask-vault-pass
 ansible-playbook site.yml --tags web --limit web_prod --ask-vault-pass
 ```
 
-Pour ajouter un environnement (ex. `preprod`) : dupliquer un dossier
-d'inventaire, adapter les IPs/hosts, créer son vault — `site.yml` ne change pas.
+To add an environment (e.g. `preprod`): duplicate an inventory folder, adapt
+the IPs/hosts, create its vault — `site.yml` does not change.
 
-## Hiérarchie des variables (du moins au plus prioritaire)
+## Variable hierarchy (from lowest to highest precedence)
 
-1. `roles/*/defaults/main.yml` — défauts universels non sensibles
-2. `group_vars/<groupe>.yml` — commun à un groupe, tous environnements
-3. `host_vars/<hôte>.yml` — spécifique à un hôte (prod vs staging)
-4. `inventories/<env>/group_vars/all/vault.yml` — secrets chiffrés par env
-5. `-e var=valeur` — surcharge ponctuelle en ligne de commande
+1. `roles/*/defaults/main.yml` — universal non-sensitive defaults
+2. `group_vars/<group>.yml` — shared by a group, all environments
+3. `host_vars/<host>.yml` — specific to a host (prod vs staging)
+4. `inventories/<env>/group_vars/all/vault.yml` — encrypted per-env secrets
+5. `-e var=value` — one-off command-line override
 
-Exemple : `mysql_max_connections` vaut 100 (default) → 200 sur `mysql_prod`
-(host_vars) → 50 sur `mysql_staging` (host_vars).
+Example: `mysql_max_connections` is 100 (default) → 200 on `mysql_prod`
+(host_vars) → 50 on `mysql_staging` (host_vars).
 
-## Sécurité
+## Security
 
-- **Aucun secret en clair dans le dépôt** : les mots de passe vivent dans les
-  vaults chiffrés par environnement (seuls les `.example` sont versionnés).
-- `no_log: true` sur toutes les tâches manipulant des mots de passe.
-- Mot de passe MySQL jamais passé en argument CLI (variable `MYSQL_PWD`).
-- Utilisateur MySQL applicatif limité à sa base ; utilisateurs anonymes et
-  base `test` supprimés ; `/root/.my.cnf` en `0600`.
+- **No plaintext secrets in the repository**: passwords live in per-environment
+  encrypted vaults (only the `.example` files are versioned).
+- `no_log: true` on every task handling passwords.
+- MySQL password never passed as a CLI argument (via `MYSQL_PWD` env var).
+- MySQL application user restricted to its own database; anonymous users and
+  the `test` database removed; `/root/.my.cnf` mode `0600`.
 
-## Vérification après déploiement
+## Post-deployment verification
 
 ```bash
-sudo systemctl status mysql        # sur VM1
-sudo systemctl status apache2      # sur VM2
-mysql -h 192.168.56.11 -u prestashop_user -p -e "SELECT 1;"   # depuis VM2
-# Depuis Windows : http://192.168.56.12 (ou http://localhost:8081)
+sudo systemctl status mysql        # on VM1
+sudo systemctl status apache2      # on VM2
+mysql -h 192.168.56.11 -u prestashop_user -p -e "SELECT 1;"   # from VM2
+# From Windows: http://192.168.56.12 (or http://localhost:8081)
 ```
 
 ## Documentation
 
-| Document | Contenu |
+| Document | Contents |
 | --- | --- |
-| [PRESENTATION.md](PRESENTATION.md) | Présentation détaillée du projet et du processus |
-| [culture.md](culture.md) | Questions/réponses d'apprentissage Ansible |
-| [roles/mysql/README.md](roles/mysql/README.md) | Documentation du rôle mysql |
-| [roles/prestashop/README.md](roles/prestashop/README.md) | Documentation du rôle prestashop |
-| [VARIABLES_HIERARCHY.md](VARIABLES_HIERARCHY.md) | Hiérarchie et résolution des variables (à jour) |
-| `deploy_logs.txt`, `LOGS_DEPLOIEMENT_FINAL.txt` | Logs réels du déploiement de la version examen (archives) |
+| [roles/mysql/README.md](roles/mysql/README.md) | Documentation of the `mysql` role |
+| [roles/prestashop/README.md](roles/prestashop/README.md) | Documentation of the `prestashop` role |
+| [VARIABLES_HIERARCHY.md](VARIABLES_HIERARCHY.md) | Variables hierarchy and resolution (up to date) |
