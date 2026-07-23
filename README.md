@@ -2,8 +2,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ansible](https://img.shields.io/badge/Ansible-2.9%2B-EE0000?logo=ansible&logoColor=white)](https://docs.ansible.com/)
-[![Last commit](https://img.shields.io/github/last-commit/SNsitso/Reference-Ansible-project)](https://github.com/SNsitso/Reference-Ansible-project/commits/main)
-[![Repo size](https://img.shields.io/github/repo-size/SNsitso/Reference-Ansible-project)](https://github.com/SNsitso/Reference-Ansible-project)
+[![GitLab last commit](https://img.shields.io/gitlab/last-commit/SNsitso%2Fproject-ansible?label=last%20commit)](https://gitlab.com/SNsitso/project-ansible/-/commits/main)
+[![GitHub repo size](https://img.shields.io/github/repo-size/SNsitso/Reference-Ansible-project?label=repo%20size)](https://github.com/SNsitso/Reference-Ansible-project)
+
+**Available on:**
+[![GitLab](https://img.shields.io/badge/GitLab-origin-FC6D26?logo=gitlab&logoColor=white)](https://gitlab.com/SNsitso/project-ansible)
+[![GitHub](https://img.shields.io/badge/GitHub-mirror-181717?logo=github&logoColor=white)](https://github.com/SNsitso/Reference-Ansible-project)
 
 **Stack:**
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-20.04-E95420?logo=ubuntu&logoColor=white)
