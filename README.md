@@ -1,5 +1,20 @@
 # Ansible Reference - PrestaShop + MySQL Deployment
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Ansible](https://img.shields.io/badge/Ansible-2.9%2B-EE0000?logo=ansible&logoColor=white)](https://docs.ansible.com/)
+[![Last commit](https://img.shields.io/github/last-commit/SNsitso/Reference-Ansible-project)](https://github.com/SNsitso/Reference-Ansible-project/commits/main)
+[![Repo size](https://img.shields.io/github/repo-size/SNsitso/Reference-Ansible-project)](https://github.com/SNsitso/Reference-Ansible-project)
+
+**Stack:**
+![Ubuntu](https://img.shields.io/badge/Ubuntu-20.04-E95420?logo=ubuntu&logoColor=white)
+![Vagrant](https://img.shields.io/badge/Vagrant-2.2%2B-1868F2?logo=vagrant&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)
+![Apache](https://img.shields.io/badge/Apache-2.4-D22128?logo=apache&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-7.4-777BB4?logo=php&logoColor=white)
+![PrestaShop](https://img.shields.io/badge/PrestaShop-8.1.2-DF0067?logo=prestashop&logoColor=white)
+
+---
+
 Reference Ansible project: a **single top-level playbook** (`site.yml`)
 deploys a PrestaShop + MySQL e-commerce platform on the environment of your
 choice (production, staging, or any new inventory you add).
